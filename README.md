@@ -3,7 +3,7 @@
 This project implements a binary classifier to predict whether a tumor is malignant or benign using logistic regression.  
 The model is trained on a dataset inspired by Andrew Ng’s Machine Learning course.
 
-## Deployed link -> https://tumour-detector.onrender.com/
+## deployed link -> https://tumour-detector.onrender.com/
 
 ## 🔍 About the Project
 
