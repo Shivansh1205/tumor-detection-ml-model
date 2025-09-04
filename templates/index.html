@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tumor Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-section h2 {
+            color: #2d3748;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+        
+        .predict-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .predict-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .predict-btn:active {
+            transform: translateY(0);
+        }
+        
+        .predict-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-section {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .result-placeholder {
+            text-align: center;
+            color: #a0aec0;
+            font-size: 1.1rem;
+        }
+        
+        .result {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .result.benign .result-icon {
+            color: #48bb78;
+        }
+        
+        .result.malignant .result-icon {
+            color: #f56565;
+        }
+        
+        .result h3 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        
+        .result.benign h3 {
+            color: #48bb78;
+        }
+        
+        .result.malignant h3 {
+            color: #f56565;
+        }
+        
+        .probability {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            transition: width 0.8s ease-out;
+            border-radius: 10px;
+        }
+        
+        .confidence-fill.benign {
+            background: linear-gradient(90deg, #48bb78, #38a169);
+        }
+        
+        .confidence-fill.malignant {
+            background: linear-gradient(90deg, #f56565, #e53e3e);
+        }
+        
+        .details {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .details h4 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .details p {
+            color: #4a5568;
+            line-height: 1.5;
+        }
+        
+        .error {
+            background: linear-gradient(45deg, #f56565, #e53e3e);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 20%, 40%, 60%, 80% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        }
+        
+        .footer {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+        }
+        
+        .footer p {
+            opacity: 0.8;
+        }
+        
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        
+        .status-indicator.connected {
+            background: #48bb78;
+        }
+        
+        .status-indicator.disconnected {
+            background: #f56565;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator disconnected" id="statusIndicator">
+        🔴 Disconnected
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🧬 AI Tumor Detection</h1>
+            <p>Advanced machine learning-powered tumor classification system</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="card input-section">
+                <h2>Input Parameters</h2>
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label for="tumorSize">
+                            📏 Tumor Size
+                            <small style="display: block; color: #666; font-weight: normal;">
+                                Typical range: 10-100 units
+                            </small>
+                        </label>
+                        <input type="number" 
+                               id="tumorSize" 
+                               name="tumor_size" 
+                               step="0.1" 
+                               min="0" 
+                               max="200"
+                               placeholder="e.g., 45.5" 
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tumorTexture">
+                            🔬 Tumor Texture
+                            <small style="display: block; color: #666; font-weight: normal;">
+                                Typical range: 20-120 units
+                            </small>
+                        </label>
+                        <input type="number" 
+                               id="tumorTexture" 
+                               name="tumor_texture" 
+                               step="0.1" 
+                               min="0" 
+                               max="200"
+                               placeholder="e.g., 85.2" 
+                               required>
+                    </div>
+                    
+                    <button type="submit" class="predict-btn" id="predictBtn">
+                        <span class="btn-text">🤖 Analyze Tumor</span>
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <span>Analyzing...</span>
+                        </div>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="card result-section">
+                <div class="result-placeholder" id="resultPlaceholder">
+                    <div style="font-size: 3rem; margin-bottom: 20px;">🏥</div>
+                    <p>Enter tumor parameters and click "Analyze Tumor" to get AI-powered predictions</p>
+                </div>
+                
+                <div class="result" id="result">
+                    <div class="result-icon" id="resultIcon">🔬</div>
+                    <h3 id="resultLabel">Result</h3>
+                    <div class="probability" id="resultProbability">--</div>
+                    
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill"></div>
+                    </div>
+                    <p><strong>Confidence:</strong> <span id="confidence">--</span>%</p>
+                    
+                    <div class="details">
+                        <h4>Analysis Details</h4>
+                        <p id="analysisDetails">Detailed analysis information will appear here.</p>
+                    </div>
+                </div>
+                
+                <div class="error" id="errorMessage">
+                    Error message will appear here
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>⚠️ This is a demonstration system. Always consult medical professionals for actual diagnoses.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        const statusIndicator = document.getElementById('statusIndicator');
+        const form = document.getElementById('predictionForm');
+        const predictBtn = document.getElementById('predictBtn');
+        const btnText = predictBtn.querySelector('.btn-text');
+        const loading = predictBtn.querySelector('.loading');
+        
+        // Check API connection on load
+        checkAPIConnection();
+        
+        async function checkAPIConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    statusIndicator.textContent = '🟢 Connected';
+                    statusIndicator.className = 'status-indicator connected';
+                } else {
+                    throw new Error('API not responding');
+                }
+            } catch (error) {
+                statusIndicator.textContent = '🔴 Disconnected';
+                statusIndicator.className = 'status-indicator disconnected';
+                console.error('API connection failed:', error);
+            }
+        }
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await makePrediction();
+        });
+        
+        async function makePrediction() {
+            const tumorSize = parseFloat(document.getElementById('tumorSize').value);
+            const tumorTexture = parseFloat(document.getElementById('tumorTexture').value);
+            
+            // Validate inputs
+            if (isNaN(tumorSize) || isNaN(tumorTexture)) {
+                showError('Please enter valid numeric values for both fields.');
+                return;
+            }
+            
+            if (tumorSize < 0 || tumorTexture < 0) {
+                showError('Please enter positive values for tumor parameters.');
+                return;
+            }
+            
+            // Show loading state
+            setLoadingState(true);
+            hideResult();
+            hideError();
+            
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tumor_size: tumorSize,
+                        tumor_texture: tumorTexture
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+                
+                displayResult(data);
+                
+            } catch (error) {
+                console.error('Prediction error:', error);
+                showError(`Prediction failed: ${error.message}`);
+                checkAPIConnection(); // Recheck connection on error
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        function setLoadingState(isLoading) {
+            if (isLoading) {
+                btnText.style.display = 'none';
+                loading.style.display = 'flex';
+                predictBtn.disabled = true;
+            } else {
+                btnText.style.display = 'block';
+                loading.style.display = 'none';
+                predictBtn.disabled = false;
+            }
+        }
+        
+        function displayResult(data) {
+            const result = document.getElementById('result');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultLabel = document.getElementById('resultLabel');
+            const resultProbability = document.getElementById('resultProbability');
+            const confidenceFill = document.getElementById('confidenceFill');
+            const confidence = document.getElementById('confidence');
+            const analysisDetails = document.getElementById('analysisDetails');
+            const placeholder = document.getElementById('resultPlaceholder');
+            
+            // Hide placeholder and show result
+            placeholder.style.display = 'none';
+            result.className = 'result show';
+            
+            // Set result type class
+            if (data.prediction === 1) {
+                result.classList.add('malignant');
+                resultIcon.textContent = '⚠️';
+                resultLabel.textContent = 'Malignant Tumor Detected';
+                resultLabel.style.color = '#f56565';
+                confidenceFill.className = 'confidence-fill malignant';
+            } else {
+                result.classList.add('benign');
+                resultIcon.textContent = '✅';
+                resultLabel.textContent = 'Benign Tumor Detected';
+                resultLabel.style.color = '#48bb78';
+                confidenceFill.className = 'confidence-fill benign';
+            }
+            
+            // Set probability
+            const probability = data.prediction === 1 ? 
+                data.probability_malignant : data.probability_benign;
+            resultProbability.textContent = `${(probability * 100).toFixed(1)}% ${data.prediction_label}`;
+            
+            // Set confidence bar
+            const confidencePercentage = (data.confidence * 100).toFixed(1);
+            confidence.textContent = confidencePercentage;
+            confidenceFill.style.width = `${confidencePercentage}%`;
+            
+            // Set analysis details
+            analysisDetails.innerHTML = `
+                <strong>Input Parameters:</strong><br>
+                • Tumor Size: ${data.tumor_size}<br>
+                • Tumor Texture: ${data.tumor_texture}<br><br>
+                
+                <strong>Model Probabilities:</strong><br>
+                • Benign: ${(data.probability_benign * 100).toFixed(1)}%<br>
+                • Malignant: ${(data.probability_malignant * 100).toFixed(1)}%<br><br>
+                
+                <strong>Classification:</strong> ${data.prediction_label}<br>
+                <strong>Confidence Level:</strong> ${confidencePercentage}%
+            `;
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.className = 'error show';
+            hideResult();
+        }
+        
+        function hideError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.className = 'error';
+        }
+        
+        function hideResult() {
+            const result = document.getElementById('result');
+            const placeholder = document.getElementById('resultPlaceholder');
+            
+            result.className = 'result';
+            result.classList.remove('benign', 'malignant');
+            placeholder.style.display = 'block';
+        }
+        
+        // Sample data for quick testing
+        function loadSampleData(isMalignant = false) {
+            const tumorSizeInput = document.getElementById('tumorSize');
+            const tumorTextureInput = document.getElementById('tumorTexture');
+            
+            if (isMalignant) {
+                // Sample data likely to be classified as malignant
+                tumorSizeInput.value = '65';
+                tumorTextureInput.value = '95';
+            } else {
+                // Sample data likely to be classified as benign
+                tumorSizeInput.value = '25';
+                tumorTextureInput.value = '45';
+            }
+        }
+        
+        // Add sample data buttons (for testing)
+        const inputSection = document.querySelector('.input-section');
+        const sampleButtons = document.createElement('div');
+        sampleButtons.innerHTML = `
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" onclick="loadSampleData(false)" 
+                        style="flex: 1; padding: 10px; border: 1px solid #48bb78; background: transparent; color: #48bb78; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
+                    📋 Load Benign Sample
+                </button>
+                <button type="button" onclick="loadSampleData(true)" 
+                        style="flex: 1; padding: 10px; border: 1px solid #f56565; background: transparent; color: #f56565; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
+                    📋 Load Malignant Sample
+                </button>
+            </div>
+        `;
+        inputSection.appendChild(sampleButtons);
+        
+        // Recheck connection periodically
+        setInterval(checkAPIConnection, 30000); // Every 30 seconds
+    </script>
+</body>
+</html>
